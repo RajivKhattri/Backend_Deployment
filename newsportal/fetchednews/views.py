@@ -6,10 +6,11 @@ from rest_framework import serializers
 from .models import FetchedNews
 from .services import NewsDataIOService
 from .serializers import FetchedNewsSerializer
+from django.utils import timezone
 
 # Create your views here.
 
-class FetchedNewsViewSet(viewsets.ReadOnlyModelViewSet):
+class FetchedNewsViewSet(viewsets.ModelViewSet):
     queryset = FetchedNews.objects.all()
     serializer_class = FetchedNewsSerializer
 
@@ -19,6 +20,23 @@ class FetchedNewsViewSet(viewsets.ReadOnlyModelViewSet):
         if category:
             queryset = queryset.filter(category__iexact=category)
         return queryset
+
+    def create(self, request, *args, **kwargs):
+        # Generate a unique source_id for manual entries
+        source_id = f"manual_{timezone.now().timestamp()}"
+        
+        # Add required fields
+        data = request.data.copy()
+        data['source_id'] = source_id
+        data['published_at'] = timezone.now()
+        data['source_url'] = data.get('source_url', '')  # Optional field
+        
+        serializer = self.get_serializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        self.perform_create(serializer)
+        
+        headers = self.get_success_headers(serializer.data)
+        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
     @action(detail=False, methods=['post'])
     def fetch_nepal_news(self, request):
