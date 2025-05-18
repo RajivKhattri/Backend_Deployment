@@ -36,8 +36,10 @@ class NewsDataIOService:
                         unique_str = (article.get('link', '') or '') + (article.get('pubDate', '') or '')
                         source_id = hashlib.sha256(unique_str.encode('utf-8')).hexdigest()
                     print("Processing:", article.get('title'), source_id)
-                    description = article.get('description') or 'No summary available'
-                    image_url = article.get('image_url') or 'https://via.placeholder.com/300x200?text=No+Image'
+                    description = article.get('description')
+                    image_url = article.get('image_url')
+                    if not description or not image_url:
+                        continue  # Skip this article if either is missing
                     FetchedNews.objects.update_or_create(
                         source_id=source_id,
                         defaults={
