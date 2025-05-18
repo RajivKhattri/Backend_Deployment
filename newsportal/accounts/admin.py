@@ -51,3 +51,26 @@ class EditorProfileAdmin(admin.ModelAdmin):
 @admin.register(AdminProfile)
 class AdminProfileAdmin(admin.ModelAdmin):
     list_display = ('user',)
+    actions = ['approve_admins', 'reject_admins']
+
+    def approve_admins(self, request, queryset):
+        for profile in queryset:
+            if hasattr(profile, 'approval_status'):
+                profile.approval_status = 'approved'
+                profile.user.is_active = True
+                profile.user.save()
+                profile.save()
+            else:
+                self.message_user(request, 'Add approval_status field to AdminProfile model for full functionality.', level='warning')
+    approve_admins.short_description = "Approve selected admin profiles"
+
+    def reject_admins(self, request, queryset):
+        for profile in queryset:
+            if hasattr(profile, 'approval_status'):
+                profile.approval_status = 'rejected'
+                profile.user.is_active = False
+                profile.user.save()
+                profile.save()
+            else:
+                self.message_user(request, 'Add approval_status field to AdminProfile model for full functionality.', level='warning')
+    reject_admins.short_description = "Reject selected admin profiles"
