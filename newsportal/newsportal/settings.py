@@ -193,5 +193,5 @@ AUTHENTICATION_BACKENDS = (
 LOGIN_REDIRECT_URL = '/'
 
 CRONJOBS = [
-    ('0 * * * *', 'fetchednews.services.NewsDataIOService.fetch_nepal_news'),  # every hour
+    ('0 0 * * *', 'fetchednews.services.NewsDataIOService.fetch_nepal_news'),  # every day at midnight
 ]
