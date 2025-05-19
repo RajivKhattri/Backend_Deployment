@@ -291,6 +291,17 @@ class RoleChangeRequestViewSet(viewsets.ModelViewSet):
             return [permissions.IsAuthenticated()]
         return [AdminPermission()]
 
+    def create(self, request, *args, **kwargs):
+        user = request.user
+        requested_role = request.data.get('requested_role')
+        # Prevent duplicate pending requests for the same role
+        if RoleChangeRequest.objects.filter(user=user, requested_role=requested_role, status='pending').exists():
+            return Response(
+                {'error': f'You already have a pending request for the role "{requested_role}". Please wait for it to be processed.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        return super().create(request, *args, **kwargs)
+
     def list(self, request, *args, **kwargs):
         requests = self.get_queryset().order_by('-request_date')
         data = []
