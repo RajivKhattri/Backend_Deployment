@@ -60,9 +60,30 @@ class UserSerializer(serializers.ModelSerializer):
         if data['password'] != data['password2']:
             raise serializers.ValidationError({"password": "Password fields didn't match."})
         
-        # Convert role to lowercase for backend processing
-        if 'role' in data:
-            data['role'] = data['role'].lower()
+        # Role-specific validations
+        role = data.get('role', '').lower()
+        
+        if role == 'author':
+            if not data.get('bio'):
+                raise serializers.ValidationError({"bio": "Bio is required for authors"})
+            if not data.get('category_expertise'):
+                raise serializers.ValidationError({"category_expertise": "Category expertise is required for authors"})
+        
+        elif role == 'editor':
+            if not data.get('areas_of_oversight'):
+                raise serializers.ValidationError({"areas_of_oversight": "Areas of oversight is required for editors"})
+            # Check if at least one management responsibility is selected
+            if not any([
+                data.get('email_verification'),
+                data.get('user_management'),
+                data.get('article_management'),
+                data.get('analytics')
+            ]):
+                raise serializers.ValidationError({"management_responsibilities": "At least one management responsibility must be selected"})
+        
+        elif role == 'admin':
+            if not data.get('admin_document'):
+                raise serializers.ValidationError({"admin_document": "Approval document is required for admin registration"})
         
         return data
 
