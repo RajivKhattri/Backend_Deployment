@@ -36,9 +36,9 @@ class UserSerializer(serializers.ModelSerializer):
     # Add extra fields for each role
     profile_picture = serializers.ImageField(write_only=True, required=False)
     bio = serializers.CharField(write_only=True, required=False)
-    expertise = serializers.CharField(write_only=True, required=False)
+    category_expertise = serializers.ChoiceField(choices=AuthorProfile.EXPERTISE_CHOICES, write_only=True, required=False)
     certificates = serializers.FileField(write_only=True, required=False)
-    editorial_oversight = serializers.CharField(write_only=True, required=False)
+    areas_of_oversight = serializers.CharField(write_only=True, required=False)
     email_verification = serializers.BooleanField(write_only=True, required=False)
     user_management = serializers.BooleanField(write_only=True, required=False)
     article_management = serializers.BooleanField(write_only=True, required=False)
@@ -48,8 +48,8 @@ class UserSerializer(serializers.ModelSerializer):
     class Meta:
         model = User
         fields = ('id', 'username', 'email', 'role', 'password', 'password2',
-                  'profile_picture', 'bio', 'expertise', 'certificates',
-                  'editorial_oversight', 'email_verification', 'user_management',
+                  'profile_picture', 'bio', 'category_expertise', 'certificates',
+                  'areas_of_oversight', 'email_verification', 'user_management',
                   'article_management', 'analytics', 'admin_document')
         extra_kwargs = {
             'password': {'write_only': True},
@@ -59,6 +59,11 @@ class UserSerializer(serializers.ModelSerializer):
     def validate(self, data):
         if data['password'] != data['password2']:
             raise serializers.ValidationError({"password": "Password fields didn't match."})
+        
+        # Convert role to lowercase for backend processing
+        if 'role' in data:
+            data['role'] = data['role'].lower()
+        
         return data
 
     def create(self, validated_data):
@@ -68,9 +73,9 @@ class UserSerializer(serializers.ModelSerializer):
             # Extract profile fields
             profile_picture = validated_data.pop('profile_picture', None)
             bio = validated_data.pop('bio', None)
-            expertise = validated_data.pop('expertise', None)
+            category_expertise = validated_data.pop('category_expertise', None)
             certificates = validated_data.pop('certificates', None)
-            editorial_oversight = validated_data.pop('editorial_oversight', None)
+            areas_of_oversight = validated_data.pop('areas_of_oversight', None)
             email_verification = validated_data.pop('email_verification', False)
             user_management = validated_data.pop('user_management', False)
             article_management = validated_data.pop('article_management', False)
@@ -94,7 +99,7 @@ class UserSerializer(serializers.ModelSerializer):
                 AuthorProfile.objects.create(
                     user=user,
                     bio=bio,
-                    category_expertise=expertise,
+                    category_expertise=category_expertise,
                     certificates=certificates,
                     approval_status='pending',
                     profile_picture=profile_picture
@@ -113,7 +118,7 @@ class UserSerializer(serializers.ModelSerializer):
 
                 EditorProfile.objects.create(
                     user=user,
-                    areas_of_oversight=editorial_oversight,
+                    areas_of_oversight=areas_of_oversight,
                     management_responsibilities=management_responsibilities,
                     approval_status='pending',
                     profile_picture=profile_picture
