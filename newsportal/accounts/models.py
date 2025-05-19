@@ -4,6 +4,7 @@ from django.utils import timezone
 import uuid
 from django.core.mail import send_mail
 from django.conf import settings
+from django.core.validators import RegexValidator
 
 class CustomUser(AbstractUser):
     ROLE_CHOICES = [
@@ -12,7 +13,18 @@ class CustomUser(AbstractUser):
         ('editor', 'Editor'),
         ('admin', 'Admin'),
     ]
-    
+    username_validator = RegexValidator(
+        regex=r'^[\w.@+\- ]+$',  # Added space to the regex
+        message="Enter a valid username. This value may contain only letters, numbers, spaces, and @/./+/-/_ characters."
+    )
+    username = models.CharField(
+        max_length=150,
+        unique=True,
+        validators=[username_validator],
+        error_messages={
+            "unique": "A user with that username already exists.",
+        },
+    )
     email = models.EmailField(unique=True)
     role = models.CharField(max_length=10, choices=ROLE_CHOICES, default='user')
     is_verified = models.BooleanField(default=False)
