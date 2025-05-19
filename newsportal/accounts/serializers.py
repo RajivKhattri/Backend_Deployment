@@ -36,17 +36,21 @@ class UserSerializer(serializers.ModelSerializer):
     # Add extra fields for each role
     profile_picture = serializers.ImageField(write_only=True, required=False)
     bio = serializers.CharField(write_only=True, required=False)
-    category_expertise = serializers.CharField(write_only=True, required=False)
+    expertise = serializers.CharField(write_only=True, required=False)
     certificates = serializers.FileField(write_only=True, required=False)
-    areas_of_oversight = serializers.CharField(write_only=True, required=False)
-    management_responsibilities = serializers.ListField(child=serializers.CharField(), write_only=True, required=False)
-    approval_document = serializers.FileField(write_only=True, required=False)
+    editorial_oversight = serializers.CharField(write_only=True, required=False)
+    email_verification = serializers.BooleanField(write_only=True, required=False)
+    user_management = serializers.BooleanField(write_only=True, required=False)
+    article_management = serializers.BooleanField(write_only=True, required=False)
+    analytics = serializers.BooleanField(write_only=True, required=False)
+    admin_document = serializers.FileField(write_only=True, required=False)
 
     class Meta:
         model = User
         fields = ('id', 'username', 'email', 'role', 'password', 'password2',
-                  'profile_picture', 'bio', 'category_expertise', 'certificates',
-                  'areas_of_oversight', 'management_responsibilities', 'approval_document')
+                  'profile_picture', 'bio', 'expertise', 'certificates',
+                  'editorial_oversight', 'email_verification', 'user_management',
+                  'article_management', 'analytics', 'admin_document')
         extra_kwargs = {
             'password': {'write_only': True},
             'role': {'required': True}
@@ -64,11 +68,14 @@ class UserSerializer(serializers.ModelSerializer):
             # Extract profile fields
             profile_picture = validated_data.pop('profile_picture', None)
             bio = validated_data.pop('bio', None)
-            category_expertise = validated_data.pop('category_expertise', None)
+            expertise = validated_data.pop('expertise', None)
             certificates = validated_data.pop('certificates', None)
-            areas_of_oversight = validated_data.pop('areas_of_oversight', None)
-            management_responsibilities = validated_data.pop('management_responsibilities', None)
-            approval_document = validated_data.pop('approval_document', None)
+            editorial_oversight = validated_data.pop('editorial_oversight', None)
+            email_verification = validated_data.pop('email_verification', False)
+            user_management = validated_data.pop('user_management', False)
+            article_management = validated_data.pop('article_management', False)
+            analytics = validated_data.pop('analytics', False)
+            admin_document = validated_data.pop('admin_document', None)
 
             user = User(
                 username=validated_data['username'],
@@ -79,6 +86,7 @@ class UserSerializer(serializers.ModelSerializer):
             if role in ['author', 'editor']:
                 user.is_active = False
             user.save()
+
             # Create profile based on role
             if role == 'user':
                 UserProfile.objects.create(user=user, profile_picture=profile_picture)
@@ -86,21 +94,36 @@ class UserSerializer(serializers.ModelSerializer):
                 AuthorProfile.objects.create(
                     user=user,
                     bio=bio,
-                    category_expertise=category_expertise,
+                    category_expertise=expertise,
                     certificates=certificates,
                     approval_status='pending',
                     profile_picture=profile_picture
                 )
             elif role == 'editor':
+                # Convert boolean fields to management responsibilities list
+                management_responsibilities = []
+                if email_verification:
+                    management_responsibilities.append('email_verification')
+                if user_management:
+                    management_responsibilities.append('user_management')
+                if article_management:
+                    management_responsibilities.append('article_management')
+                if analytics:
+                    management_responsibilities.append('analytics')
+
                 EditorProfile.objects.create(
                     user=user,
-                    areas_of_oversight=areas_of_oversight,
-                    management_responsibilities=management_responsibilities or [],
+                    areas_of_oversight=editorial_oversight,
+                    management_responsibilities=management_responsibilities,
                     approval_status='pending',
                     profile_picture=profile_picture
                 )
             elif role == 'admin':
-                AdminProfile.objects.create(user=user, approval_document=approval_document, profile_picture=profile_picture)
+                AdminProfile.objects.create(
+                    user=user, 
+                    approval_document=admin_document,
+                    profile_picture=profile_picture
+                )
             return user
 
 
