@@ -59,20 +59,28 @@ class UserSerializer(serializers.ModelSerializer):
     def validate(self, data):
         if data['password'] != data['password2']:
             raise serializers.ValidationError({"password": "Password fields didn't match."})
-        
-        # Role-specific validations
         role = data.get('role', '').lower()
-        
+        # Accept category_expertise as string or list, always use string for model
         if role == 'author':
             if not data.get('bio'):
                 raise serializers.ValidationError({"bio": "Bio is required for authors"})
-            if not data.get('category_expertise'):
+            cat_exp = data.get('category_expertise')
+            if not cat_exp:
                 raise serializers.ValidationError({"category_expertise": "Category expertise is required for authors"})
-        
+            # If frontend sends as array, take first element
+            if isinstance(cat_exp, list):
+                if len(cat_exp) == 0 or not cat_exp[0]:
+                    raise serializers.ValidationError({"category_expertise": "Category expertise is required for authors"})
+                data['category_expertise'] = cat_exp[0]
         elif role == 'editor':
-            if not data.get('areas_of_oversight'):
+            areas = data.get('areas_of_oversight')
+            if not areas:
                 raise serializers.ValidationError({"areas_of_oversight": "Areas of oversight is required for editors"})
-            # Check if at least one management responsibility is selected
+            # If frontend sends as array, take first element
+            if isinstance(areas, list):
+                if len(areas) == 0 or not areas[0]:
+                    raise serializers.ValidationError({"areas_of_oversight": "Areas of oversight is required for editors"})
+                data['areas_of_oversight'] = areas[0]
             if not any([
                 data.get('email_verification'),
                 data.get('user_management'),
@@ -80,11 +88,9 @@ class UserSerializer(serializers.ModelSerializer):
                 data.get('analytics')
             ]):
                 raise serializers.ValidationError({"management_responsibilities": "At least one management responsibility must be selected"})
-        
         elif role == 'admin':
             if not data.get('admin_document'):
                 raise serializers.ValidationError({"admin_document": "Approval document is required for admin registration"})
-        
         return data
 
     def create(self, validated_data):
