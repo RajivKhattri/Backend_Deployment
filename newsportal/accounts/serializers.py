@@ -100,7 +100,7 @@ class UserSerializer(serializers.ModelSerializer):
             # Extract profile fields
             profile_picture = validated_data.pop('profile_picture', None)
             bio = validated_data.pop('bio', None)
-            category_expertise = validated_data.pop('category_expertise', None)
+            category_expertise = validated_data.pop('_expertise', None)
             certificates = validated_data.pop('certificates', None)
             areas_of_oversight = validated_data.pop('areas_of_oversight', None)
             email_verification = validated_data.pop('email_verification', False)
