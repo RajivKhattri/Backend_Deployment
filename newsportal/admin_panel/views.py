@@ -302,7 +302,7 @@ class RoleChangeRequestViewSet(viewsets.ModelViewSet):
         return super().create(request, *args, **kwargs)
 
     def list(self, request, *args, **kwargs):
-        requests = self.get_queryset().order_by('-request_date')
+        requests = self.get_queryset().filter(status='pending').order_by('-request_date')
         data = []
         for req in requests:
             data.append({
