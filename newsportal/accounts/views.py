@@ -10,7 +10,7 @@ from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
 from django.contrib.auth import get_user_model
 from .serializers import UserSerializer, LoginSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer, AuthorProfileSerializer, EditorProfileSerializer
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework import permissions
 from .models import AuthorProfile, EditorProfile, CustomUser
@@ -22,6 +22,7 @@ from news.serializers import ArticleSerializer, EditorDashboardArticleSerializer
 from datetime import timedelta
 from django.utils import timezone
 from admin_panel.models import AdminLog
+from news.models import ArticleInteraction
 
 User = get_user_model()
 
@@ -406,10 +407,8 @@ class AuthorUpdatesSummaryView(APIView):
         rejected_articles = Article.objects.filter(author=user, status='rejected').count()
         last_month_rejected = Article.objects.filter(author=user, status='rejected', created_at__gte=last_month).count()
         # Article Views (sum of all views for author's articles)
-        from news.models import ArticleInteraction
-        article_ids = Article.objects.filter(author=user).values_list('id', flat=True)
-        article_views = ArticleInteraction.objects.filter(article_id__in=article_ids).count()
-        last_week_views = ArticleInteraction.objects.filter(article_id__in=article_ids, created_at__gte=last_week).count()
+        article_views = ArticleInteraction.objects.filter(article_id__in=Article.objects.filter(author=user).values_list('id', flat=True)).count()
+        last_week_views = ArticleInteraction.objects.filter(article_id__in=Article.objects.filter(author=user).values_list('id', flat=True), created_at__gte=last_week).count()
         return Response({
             'published_articles': published_articles,
             'published_articles_delta': published_articles - last_month_published,
@@ -467,21 +466,25 @@ class AuthorDashboardView(APIView):
 
 # New public view for published articles
 class PublishedArticlesListView(APIView):
-    # No permission_classes needed for public access
+    permission_classes = [AllowAny]
     def get(self, request):
-        articles = Article.objects.filter(status='approved').order_by('-created_at') # Fetch approved articles, order by creation date
-        # Use EditorPublishedArticleSerializer to serialize the data
-        data = EditorPublishedArticleSerializer(articles, many=True).data
+        # Get all published articles (status='approved')
+        articles = Article.objects.filter(status='approved').order_by('-created_at')
+        
+        # Serialize the articles with necessary fields
+        data = []
+        for article in articles:
+            article_data = {
+                'id': article.id,
+                'title': article.title,
+                'description': article.description,
+                'category': article.category.name,
+                'author': article.author.username,
+                'created_at': article.created_at.strftime("%b %d, %Y"),
+                'image': request.build_absolute_uri(article.image.url) if article.image else None,
+                'views': ArticleInteraction.objects.filter(article=article).count(),
+                'comments': article.comments.count()
+            }
+            data.append(article_data)
+        
         return Response(data)
-
-class UserPublishedArticlesView(APIView):
-    permission_classes = [IsAuthenticated]
-    
-    def get(self, request):
-        user = request.user
-        articles = Article.objects.filter(author=user, status='approved').order_by('-created_at')
-        data = AuthorUpdatesArticleSerializer(articles, many=True).data
-        return Response({
-            'articles': data,
-            'total_count': articles.count()
-        })
