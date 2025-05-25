@@ -35,5 +35,5 @@ urlpatterns = [
     path('author/pending-reviews/', AuthorPendingReviewsListView.as_view(), name='author-pending-reviews-list'),
     path('author/updates/', AuthorUpdatesListView.as_view(), name='author-updates-list'),
     path('author/dashboard/', AuthorDashboardView.as_view(), name='author-dashboard'),
-    path('published-articles/', PublishedArticlesListView.as_view(), name='published-articles-list'),
+    path('published-articles/', PublishedArticlesListView.as_view(), name='published-articles'),
 ]

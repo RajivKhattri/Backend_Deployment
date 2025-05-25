@@ -22,7 +22,6 @@ from news.serializers import ArticleSerializer, EditorDashboardArticleSerializer
 from datetime import timedelta
 from django.utils import timezone
 from admin_panel.models import AdminLog
-from news.models import ArticleInteraction
 
 User = get_user_model()
 
@@ -407,8 +406,10 @@ class AuthorUpdatesSummaryView(APIView):
         rejected_articles = Article.objects.filter(author=user, status='rejected').count()
         last_month_rejected = Article.objects.filter(author=user, status='rejected', created_at__gte=last_month).count()
         # Article Views (sum of all views for author's articles)
-        article_views = ArticleInteraction.objects.filter(article_id__in=Article.objects.filter(author=user).values_list('id', flat=True)).count()
-        last_week_views = ArticleInteraction.objects.filter(article_id__in=Article.objects.filter(author=user).values_list('id', flat=True), created_at__gte=last_week).count()
+        from news.models import ArticleInteraction
+        article_ids = Article.objects.filter(author=user).values_list('id', flat=True)
+        article_views = ArticleInteraction.objects.filter(article_id__in=article_ids).count()
+        last_week_views = ArticleInteraction.objects.filter(article_id__in=article_ids, created_at__gte=last_week).count()
         return Response({
             'published_articles': published_articles,
             'published_articles_delta': published_articles - last_month_published,
@@ -470,21 +471,19 @@ class PublishedArticlesListView(APIView):
     def get(self, request):
         # Get all published articles (status='approved')
         articles = Article.objects.filter(status='approved').order_by('-created_at')
-        
+
         # Serialize the articles with necessary fields
         data = []
         for article in articles:
             article_data = {
                 'id': article.id,
                 'title': article.title,
-                'description': article.description,
+                'description': article.content,  # Changed from article.description
                 'category': article.category.name,
                 'author': article.author.username,
                 'created_at': article.created_at.strftime("%b %d, %Y"),
                 'image': request.build_absolute_uri(article.image.url) if article.image else None,
-                'views': ArticleInteraction.objects.filter(article=article).count(),
-                'comments': article.comments.count()
             }
             data.append(article_data)
-        
+
         return Response(data)
