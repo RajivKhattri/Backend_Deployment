@@ -1,7 +1,7 @@
 from django.urls import path, include
 from .views import (
     RegisterView, LoginView, PasswordResetView, PasswordResetConfirmView, TestConnectionView, AccountsApiRootView, LogoutView,
-    EditorDashboardView, EditorPublishedArticlesView, EditorPendingReviewsView, EditorArticleDetailView, EditorEditArticleView, EditorApproveArticleView, EditorRequestRevisionView, EditorUnpublishArticleView, GoogleLogin, AuthorExpertiseChoicesView, AuthorDraftsSummaryView, AuthorReviewsSummaryView, AuthorUpdatesSummaryView, AuthorDraftsListView, AuthorPendingReviewsListView, AuthorUpdatesListView, AuthorDashboardView
+    EditorDashboardView, EditorPublishedArticlesView, EditorPendingReviewsView, EditorArticleDetailView, EditorEditArticleView, EditorApproveArticleView, EditorRequestRevisionView, EditorUnpublishArticleView, GoogleLogin, AuthorExpertiseChoicesView, AuthorDraftsSummaryView, AuthorReviewsSummaryView, AuthorUpdatesSummaryView, AuthorDraftsListView, AuthorPendingReviewsListView, AuthorUpdatesListView, AuthorDashboardView, PublishedArticlesListView
 )
 from dj_rest_auth.registration.views import SocialLoginView
 from allauth.socialaccount.providers.google.views import GoogleOAuth2Adapter
@@ -35,4 +35,5 @@ urlpatterns = [
     path('author/pending-reviews/', AuthorPendingReviewsListView.as_view(), name='author-pending-reviews-list'),
     path('author/updates/', AuthorUpdatesListView.as_view(), name='author-updates-list'),
     path('author/dashboard/', AuthorDashboardView.as_view(), name='author-dashboard'),
+    path('public-articles/', PublishedArticlesListView.as_view(), name='public-articles-list'),
 ]

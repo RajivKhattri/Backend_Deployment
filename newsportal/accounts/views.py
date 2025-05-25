@@ -464,3 +464,12 @@ class AuthorDashboardView(APIView):
             'pending_reviews': pending_reviews,
             'recent_articles': recent_data
         })
+
+# New public view for published articles
+class PublishedArticlesListView(APIView):
+    # No permission_classes needed for public access
+    def get(self, request):
+        articles = Article.objects.filter(status='approved').order_by('-created_at') # Fetch approved articles, order by creation date
+        # Use EditorPublishedArticleSerializer to serialize the data
+        data = EditorPublishedArticleSerializer(articles, many=True).data
+        return Response(data)
