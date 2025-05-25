@@ -473,3 +473,15 @@ class PublishedArticlesListView(APIView):
         # Use EditorPublishedArticleSerializer to serialize the data
         data = EditorPublishedArticleSerializer(articles, many=True).data
         return Response(data)
+
+class UserPublishedArticlesView(APIView):
+    permission_classes = [IsAuthenticated]
+    
+    def get(self, request):
+        user = request.user
+        articles = Article.objects.filter(author=user, status='approved').order_by('-created_at')
+        data = AuthorUpdatesArticleSerializer(articles, many=True).data
+        return Response({
+            'articles': data,
+            'total_count': articles.count()
+        })

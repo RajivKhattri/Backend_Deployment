@@ -3,9 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.decorators import api_view
 from rest_framework.response import Response
 from .models import Article, Comment, ArticleInteraction  # Add ArticleInteraction here
-from .serializers import ArticleSerializer, CommentSerializer, ArticleInteractionSerializer, EditorPublishedArticleSerializer  # Add these serializers
-from rest_framework.views import APIView
-from rest_framework.permissions import IsAuthenticated
+from .serializers import ArticleSerializer, CommentSerializer, ArticleInteractionSerializer  # Add these serializers
 
 
 class FeaturedArticlesViewSet(viewsets.ReadOnlyModelViewSet):
@@ -178,27 +176,4 @@ class EditorArticleViewSet(viewsets.ModelViewSet):
         return Response({
             'status': article.status,
             'editor_comments': article.editor_comments
-        })
-
-class PublishedArticlesListView(APIView):
-    # No permission_classes needed for public access
-    def get(self, request):
-        articles = Article.objects.filter(status='approved').order_by('-created_at') # Fetch approved articles, order by creation date
-        # Use EditorPublishedArticleSerializer to serialize the data
-        data = EditorPublishedArticleSerializer(articles, many=True).data
-        return Response(data)
-
-class EditorPublishedArticlesView(APIView):
-    permission_classes = [IsAuthenticated, EditorPermission]
-    
-    def get(self, request):
-        # Get all articles that have been approved by editors
-        articles = Article.objects.filter(status='approved').order_by('-created_at')
-        
-        # Serialize the articles with detailed information
-        serializer = EditorPublishedArticleSerializer(articles, many=True)
-        
-        return Response({
-            'articles': serializer.data,
-            'total_count': articles.count()
         })
